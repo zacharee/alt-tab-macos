@@ -83,32 +83,53 @@ extension AXUIElement {
 //        debugPrint(runningApp.bundleIdentifier, title, level, CGWindow.normalLevel, subrole, role, size)
 
         // Some non-windows have cgWindowId == 0 (e.g. windows of apps starting at login with the checkbox "Hidden" checked)
-        return wid != 0 && size != nil &&
-                (books(runningApp) ||
-                        keynote(runningApp) ||
-                        iina(runningApp) ||
-                        openFlStudio(runningApp, title) ||
-                        crossoverWindow(runningApp, role, subrole, level) ||
-                        // CGWindowLevel == .normalWindow helps filter out iStats Pro and other top-level pop-overs, and floating windows
-                        (level == CGWindow.normalLevel &&
-                                ([kAXStandardWindowSubrole, kAXDialogSubrole].contains(subrole) ||
-                                        openBoard(runningApp) ||
-                                        adobeAudition(runningApp, subrole) ||
-                                        adobeAfterEffects(runningApp, subrole) ||
-                                        steam(runningApp, title, role) ||
-                                        worldOfWarcraft(runningApp, role) ||
-                                        battleNetBootstrapper(runningApp, role) ||
-                                        firefox(runningApp, role, size) ||
-                                        vlcFullscreenVideo(runningApp, role) ||
-                                        sanGuoShaAirWD(runningApp) ||
-                                        dvdFab(runningApp) ||
-                                        drBetotte(runningApp) ||
-                                        androidEmulator(runningApp, title) ||
-                                        colorSlurp(runningApp)
-                                ) &&
-                                mustHaveIfJetbrainApp(runningApp, title, subrole, size!) &&
-                                mustHaveIfSteam(runningApp, title, role)
-                        ))
+        guard wid != 0 else {
+            return false
+        }
+
+        // If the window has no size (i.e., no window), ignore it.
+        guard size != nil else {
+            return false
+        }
+
+        // Check for windows that may not use `normalLevel`.
+        if (books(runningApp) ||
+                keynote(runningApp) ||
+                iina(runningApp) ||
+                openFlStudio(runningApp, title) ||
+                crossoverWindow(runningApp, role, subrole, level)
+           ) {
+            return true
+        }
+
+        // If it's not a special window and the level isn't `normalLevel`, ignore it.
+        guard level == CGWindow.normalLevel else {
+            return false
+        }
+
+        guard mustHaveIfJetbrainApp(runningApp, title, subrole, size) else {
+            return false
+        }
+
+        guard mustHaveIfSteam(runningApp, title, role) else {
+            return false
+        }
+
+        // Perform `normalLevel` window checks.
+        return [kAXStandardWindowSubrole, kAXDialogSubrole].contains(subrole) ||
+                openBoard(runningApp) ||
+                adobeAudition(runningApp, subrole) ||
+                adobeAfterEffects(runningApp, subrole) ||
+                steam(runningApp, title, role) ||
+                worldOfWarcraft(runningApp, role) ||
+                battleNetBootstrapper(runningApp, role) ||
+                firefox(runningApp, role, size) ||
+                vlcFullscreenVideo(runningApp, role) ||
+                sanGuoShaAirWD(runningApp) ||
+                dvdFab(runningApp) ||
+                drBetotte(runningApp) ||
+                androidEmulator(runningApp, title) ||
+                colorSlurp(runningApp)
     }
 
     private static func mustHaveIfJetbrainApp(_ runningApp: NSRunningApplication, _ title: String?, _ subrole: String?, _ size: NSSize) -> Bool {
