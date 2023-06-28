@@ -82,6 +82,10 @@ extension AXUIElement {
 
 //        debugPrint(runningApp.bundleIdentifier, title, level, CGWindow.normalLevel, subrole, role, size)
 
+        if (parallelsWindow(runningApp, wid, title)) {
+            debugPrint("found civ window", runningApp.bundleIdentifier, title, role, subrole, level, wid)
+        }
+
         // Some non-windows have cgWindowId == 0 (e.g. windows of apps starting at login with the checkbox "Hidden" checked)
         return wid != 0 && size != nil &&
                 (books(runningApp) ||
@@ -89,6 +93,7 @@ extension AXUIElement {
                         iina(runningApp) ||
                         openFlStudio(runningApp, title) ||
                         crossoverWindow(runningApp, role, subrole, level) ||
+                        parallelsWindow(runningApp, wid, title) ||
                         // CGWindowLevel == .normalWindow helps filter out iStats Pro and other top-level pop-overs, and floating windows
                         (level == CGWindow.normalLevel &&
                                 ([kAXStandardWindowSubrole, kAXDialogSubrole].contains(subrole) ||
@@ -213,6 +218,15 @@ extension AXUIElement {
     private static func crossoverWindow(_ runningApp: NSRunningApplication, _ role: String?, _ subrole: String?, _ level: CGWindowLevel) -> Bool {
         runningApp.bundleIdentifier == nil && role == kAXWindowRole && subrole == kAXUnknownSubrole &&
                 level == 0 && (runningApp.localizedName == "wine64-preloader" || runningApp.executableURL?.absoluteString.contains("/winetemp-") == true)
+    }
+
+    private static func parallelsWindow(_ runningApp: NSRunningApplication, _ wid: CGWindowID, _ title: String?) -> Bool {
+        runningApp.bundleIdentifier?.hasPrefix("com.parallels.winapp") == true &&
+                title?.contains("D3DProxyWindow") == false &&
+                !Windows.list.contains { window in
+                    window.application.runningApplication.bundleIdentifier?.replacingOccurrences(of: ".fs", with: "") == runningApp.bundleIdentifier?.replacingOccurrences(of: ".fs", with: "") &&
+                            window.cgWindowId != wid
+                }
     }
 
     func position() throws -> CGPoint? {
